@@ -31,8 +31,6 @@ def InitModel():
 
 
 def GenerateText(text, maxTokens):
-    global model, tokenizer, device
-
     inputs = tokenizer(
         text,
         return_tensors="pt",
