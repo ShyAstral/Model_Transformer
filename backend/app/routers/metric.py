@@ -11,9 +11,9 @@ class Stat(BaseModel):
 router = APIRouter()
 
 @router.post("/metric")
-async def generate(stat: Stat):
+async def insert_metric(stat: Stat):
     return db.InsertMetric(stat.tabcount, stat.tipcount)
 
 @router.get("/metric")
-async def generate():
+async def select_metric():
     return db.SelectMetric()

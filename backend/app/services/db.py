@@ -5,7 +5,7 @@ from database.text import Text
 from database.metric import Metric
 from database.base import Base
 
-engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
+engine = create_engine("sqlite+pysqlite:///./database.db", echo=True)
 
 def CreateTables():
     # Import tables so their metadata is registered on Base before create_all
@@ -21,6 +21,16 @@ def InsertText(text, wordCount):
         session.commit()
 
         return {"id": reg.id, "text": reg.text, "word_count": reg.word_count}
+
+def SelectText():
+    stmt = select(Text.text)
+    texts = []
+
+    with Session(engine) as session:
+        for row in session.execute(stmt):
+            texts.append(row[0])
+
+    return texts
 
 def InsertMetric(tabCount, tipCount):
     with Session(engine) as session:

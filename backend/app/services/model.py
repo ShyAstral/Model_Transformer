@@ -1,9 +1,13 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, DataCollatorForLanguageModeling, TrainingArguments, Trainer
+from peft import LoraConfig, get_peft_model, PeftModel
+from datasets import Dataset
 import torch
+import os
 
 device = None
 model = None
 tokenizer = None
+adapter_dir = "./adapter"
 
 def InitModel():
     global model, tokenizer, device
@@ -21,6 +25,30 @@ def InitModel():
 
     model = model.to(device)
 
+    # Plug or Create Adapter
+    if os.path.exists(adapter_dir):
+        # Adapter already exists
+        model = PeftModel.from_pretrained(model, adapter_dir)
+    else:
+        # Create New LoRA Adapter
+        lora_config = LoraConfig(
+            r=16,
+            lora_alpha=32,
+            target_modules=[
+                "q_proj",      # Query projection
+                "k_proj",      # Key projection
+                "v_proj",      # Value projection
+                "o_proj",      # Output projection
+                "gate_proj",   # MLP gate
+                "up_proj",     # MLP up
+                "down_proj"    # MLP down
+            ],
+            lora_dropout=0.05,
+            bias="none",
+            task_type="CAUSAL_LM"
+        )
+        model = get_peft_model(model, lora_config)
+
     tokenizer = AutoTokenizer.from_pretrained(modelName)
 
     if tokenizer.pad_token is None:
@@ -34,7 +62,7 @@ def GenerateText(text, maxTokens):
         text,
         return_tensors="pt",
         truncation=True,
-        max_length=128 
+        max_length=128
     ).to(device)
 
     # Generate text
@@ -54,3 +82,40 @@ def GenerateText(text, maxTokens):
     generatedIds = outputs[0][promptLen:]
 
     return tokenizer.decode(generatedIds, skip_special_tokens=True)
+
+def TrainModel(texts):
+    # Create dataset
+    dataset = Dataset.from_dict({"text": texts})
+
+    def TokenizeFunc(samples):
+        return tokenizer(samples["text"], truncation=True, max_length=512)
+
+    tokenized = dataset.map(TokenizeFunc, batched=True, remove_columns=["text"])
+
+    data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+
+    training_args = TrainingArguments(
+        output_dir=adapter_dir,
+        num_train_epochs=1,
+        per_device_train_batch_size=4,
+        learning_rate=2e-4,
+        logging_steps=20,
+        fp16=torch.cuda.is_available(),
+        save_strategy="no",
+        report_to="none"
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized,
+        data_collator=data_collator,
+    )
+
+    trainer.train()
+
+    # Save the adapter
+    model.save_pretrained(adapter_dir)
+
+    # Cleanup
+    del texts
