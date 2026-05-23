@@ -2,3 +2,5 @@ fastapi[standard]==0.136.1
 torch==2.12.0
 transformers==5.8.1
 sqlalchemy==2.0.49
+peft==0.19.1
+datasets==4.8.5

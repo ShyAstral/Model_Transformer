@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware # Importa el middleware
 
 from services import model, db
-from routers import generate, text
+from routers import generate, text, metric
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -24,6 +24,7 @@ app.add_middleware(
 
 app.include_router(generate.router)
 app.include_router(text.router)
+app.include_router(metric.router)
 
 @app.get("/")
 async def root():

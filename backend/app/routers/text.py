@@ -10,7 +10,7 @@ class Phrase(BaseModel):
 router = APIRouter()
 
 @router.post("/text")
-async def generate(phrase: Phrase):
+async def insert_text(phrase: Phrase):
     wordCount = len(phrase.text.split(" "))
 
     return db.InsertText(phrase.text, wordCount)
