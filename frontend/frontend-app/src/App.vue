@@ -224,7 +224,7 @@ onMounted(() => {
           </button>
         </section>
 
-        <section class="glass-card telemetry-card">
+        <section class="glass-card">
           <div class="card-header">
             <span class="indicator active"></span>
             <h2>Centro de Telemetría</h2>
