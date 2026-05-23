@@ -1,9 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-
 from services import db
 
-# This defines the fields of the POST's body request
 class Stat(BaseModel):
     tabcount: int = Field(..., ge=0) # Obligatory
     tipcount: int = Field(..., ge=0) # Obligatory
@@ -17,3 +15,8 @@ async def insert_metric(stat: Stat):
 @router.get("/metric")
 async def select_metric():
     return db.SelectMetric()
+
+@router.delete("/metric")
+async def reset_metrics():
+    db.DeleteMetrics()
+    return {"message": "Métricas reiniciadas"}

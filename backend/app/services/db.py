@@ -1,6 +1,5 @@
-from sqlalchemy import create_engine, select, func
+from sqlalchemy import create_engine, select, func, delete
 from sqlalchemy.orm import DeclarativeBase, Session
-
 from database.text import Text
 from database.metric import Metric
 from database.base import Base
@@ -8,7 +7,6 @@ from database.base import Base
 engine = create_engine("sqlite+pysqlite:///./database.db", echo=True)
 
 def CreateTables():
-    # Import tables so their metadata is registered on Base before create_all
     import database
 
     Base.metadata.create_all(bind=engine)
@@ -53,3 +51,13 @@ def SelectMetric():
             totalTips = 0
 
     return {"total_tabs": totalTabs, "total_tips": totalTips}
+
+def ClearTextTable():
+    with Session(engine) as session:
+        session.execute(delete(Text))
+        session.commit()
+
+def DeleteMetrics():
+    with Session(engine) as session:
+        session.execute(delete(Metric))
+        session.commit()

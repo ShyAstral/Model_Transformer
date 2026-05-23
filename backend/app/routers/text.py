@@ -3,7 +3,6 @@ from pydantic import BaseModel, Field
 
 from services import db
 
-# This defines the fields of the POST's body request
 class Phrase(BaseModel):
     text: str = Field(..., min_length=1) # Obligatory
 

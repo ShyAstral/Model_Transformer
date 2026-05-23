@@ -13,35 +13,32 @@ def InitModel():
     global model, tokenizer, device
 
     modelName = "Qwen/Qwen2.5-1.5B"
-
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # Load model
     model = AutoModelForCausalLM.from_pretrained(
         modelName,
         torch_dtype=torch.float16 if device == "cuda" else torch.float32,
         low_cpu_mem_usage=True,
     )
 
+    model.gradient_checkpointing_enable() 
+    model.enable_input_require_grads()
     model = model.to(device)
 
-    # Plug or Create Adapter
     if os.path.exists(adapter_dir):
-        # Adapter already exists
         model = PeftModel.from_pretrained(model, adapter_dir)
     else:
-        # Create New LoRA Adapter
         lora_config = LoraConfig(
             r=16,
             lora_alpha=32,
             target_modules=[
-                "q_proj",      # Query projection
-                "k_proj",      # Key projection
-                "v_proj",      # Value projection
-                "o_proj",      # Output projection
-                "gate_proj",   # MLP gate
-                "up_proj",     # MLP up
-                "down_proj"    # MLP down
+                "q_proj",
+                "k_proj",
+                "v_proj",
+                "o_proj",
+                "gate_proj",
+                "up_proj",
+                "down_proj"
             ],
             lora_dropout=0.05,
             bias="none",
@@ -85,7 +82,8 @@ def GenerateText(text, maxTokens):
 
 def TrainModel(texts):
     # Create dataset
-    dataset = Dataset.from_dict({"text": texts})
+    formatted_texts = [f"<|im_start|>user\nCompleta: {t}<|im_end|>\n<|im_start|>assistant\n{t}<|im_end|>" for t in texts]
+    dataset = Dataset.from_dict({"text": formatted_texts})
 
     def TokenizeFunc(samples):
         return tokenizer(samples["text"], truncation=True, max_length=512)
@@ -97,8 +95,9 @@ def TrainModel(texts):
     training_args = TrainingArguments(
         output_dir=adapter_dir,
         num_train_epochs=1,
-        per_device_train_batch_size=4,
-        learning_rate=2e-4,
+        per_device_train_batch_size=2,
+        learning_rate=5e-5,
+        weight_decay=0.01,
         logging_steps=20,
         fp16=torch.cuda.is_available(),
         save_strategy="no",
@@ -114,8 +113,6 @@ def TrainModel(texts):
 
     trainer.train()
 
-    # Save the adapter
     model.save_pretrained(adapter_dir)
 
-    # Cleanup
     del texts

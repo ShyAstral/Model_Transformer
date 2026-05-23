@@ -1,7 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware # Importa el middleware
-
 from services import model, db
 from routers import generate, text, metric
 
@@ -13,10 +12,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Configura CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # En producción, cambia "*" por la URL de tu frontend
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
